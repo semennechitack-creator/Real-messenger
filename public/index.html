@@ -191,10 +191,8 @@
         let activeChat = null;      
         let chatHistory = {};       
         
-        // --- ВАШ RADMIN IP-АДРЕС И ПОРТ СЕРВЕРА ---
-        // Используем Radmin VPN IP, чтобы друзья могли подключиться (при условии, что они настроили свой браузер!)
-        const SERVER_IP = '26.84.199.190'; 
-        const PORT = 4000;
+        // --- ИСПРАВЛЕНИЕ: ПУБЛИЧНЫЙ URL RENDER ---
+        const RENDER_URL = 'https://real-messenger.onrender.com';
         // ------------------------------------------
 
         // --- ГОЛОСОВЫЕ СООБЩЕНИЯ (MediaRecorder) ---
@@ -226,7 +224,8 @@
             const pass = document.getElementById('reg-pass').value;
             if(!user || !pass) return alert("Заполните все поля");
 
-            const res = await fetch(`http://${SERVER_IP}:${PORT}/register`, {
+            // ИСПРАВЛЕНИЕ: Используем RENDER_URL для регистрации
+            const res = await fetch(`${RENDER_URL}/register`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username: user, password: pass })
@@ -240,7 +239,8 @@
             const user = document.getElementById('login-user').value;
             const pass = document.getElementById('login-pass').value;
             
-            const res = await fetch(`http://${SERVER_IP}:${PORT}/login`, {
+            // ИСПРАВЛЕНИЕ: Используем RENDER_URL для входа
+            const res = await fetch(`${RENDER_URL}/login`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ username: user, password: pass })
@@ -262,11 +262,13 @@
 
         // --- SOCKET, CHAT, MESSAGES ---
         function initSocket() {
-            socket = io(`http://${SERVER_IP}:${PORT}`);
+            // ИСПРАВЛЕНИЕ: Используем RENDER_URL для Socket.IO
+            socket = io(RENDER_URL); 
             socket.emit('user_connected', currentUser);
             
             // --- ЗАГРУЗКА ИСТОРИИ СООБЩЕНИЙ ПРИ ВХОДЕ ---
-            fetch(`http://${SERVER_IP}:${PORT}/messages`) 
+            // ИСПРАВЛЕНИЕ: Используем RENDER_URL для загрузки истории
+            fetch(`${RENDER_URL}/messages`) 
                 .then(res => res.json())
                 .then(allMessages => {
                     allMessages.forEach(msg => {
@@ -294,9 +296,9 @@
                 const list = document.getElementById('user-list');
                 list.innerHTML = users.map(u => {
                     if (u === currentUser) {
-                         return `<div class="user-item" style="background: #333; cursor:default;">
-                            <div class="online-dot"></div> ${u} (Вы)
-                        </div>`;
+                             return `<div class="user-item" style="background: #333; cursor:default;">
+                                <div class="online-dot"></div> ${u} (Вы)
+                            </div>`;
                     }
                     
                     const isActive = u === activeChat;
@@ -428,7 +430,8 @@
             const placeholderMsg = renderFilePlaceholder(file.name);
 
             try {
-                const response = await fetch(`http://${SERVER_IP}:${PORT}/upload`, {
+                // ИСПРАВЛЕНИЕ: Используем RENDER_URL для загрузки файла
+                const response = await fetch(`${RENDER_URL}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -470,7 +473,8 @@
             
             if (msg.isVoice) {
                 // Отрисовка голосового сообщения
-                const fullUrl = `http://${SERVER_IP}:${PORT}${msg.url}`;
+                // ИСПРАВЛЕНИЕ: Используем RENDER_URL для получения файла
+                const fullUrl = `${RENDER_URL}${msg.url}`; 
                 contentHTML = `
                     <div class="voice-message">
                         <audio controls src="${fullUrl}"></audio>
@@ -482,7 +486,8 @@
                 const isImage = msg.mimeType && msg.mimeType.startsWith('image/');
                 const isVideo = msg.mimeType && msg.mimeType.startsWith('video/');
                 
-                const fullUrl = `http://${SERVER_IP}:${PORT}${msg.url}`;
+                // ИСПРАВЛЕНИЕ: Используем RENDER_URL для получения файла
+                const fullUrl = `${RENDER_URL}${msg.url}`;
 
                 if (isImage) {
                     contentHTML = `<img src="${fullUrl}" alt="${msg.originalName}">`;
@@ -571,7 +576,8 @@
             formData.append('file', audioBlob, `voice-${Date.now()}.webm`); 
             
             try {
-                const response = await fetch(`http://${SERVER_IP}:${PORT}/upload`, {
+                // ИСПРАВЛЕНИЕ: Используем RENDER_URL для загрузки голосового сообщения
+                const response = await fetch(`${RENDER_URL}/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -599,7 +605,8 @@
         }
         
         // -----------------------------------------------------------------
-        // --- WEBRTC FUNCTIONS ---
+        // --- WEBRTC FUNCTIONS (Не менялись, так как они уже используют STUN-серверы,
+        // но важно, что сигналлинг идет через исправленный Socket)
         // -----------------------------------------------------------------
         
         async function startLocalStream(isVideo) {
