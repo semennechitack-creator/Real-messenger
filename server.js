@@ -4,12 +4,18 @@ const { Server } = require('socket.io');
 const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
+// 1. ИСПРАВЛЕНИЕ: Добавлен модуль CORS
+const cors = require('cors'); 
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 const DATA_FILE = 'data.json';
 const UPLOADS_DIR = 'public/uploads';
+
+// --- НАСТРОЙКА CORS ДЛЯ HTTP/EXPRESS ---
+// Это разрешает запросы с вашего публичного домена Render
+app.use(cors()); 
+// ----------------------------------------
 
 // --- НАСТРОЙКА ХРАНИЛИЩА ФАЙЛОВ (MULTER) ---
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -40,8 +46,14 @@ app.use(express.json());
 // --- DATABASE (Simple JSON File) ---
 let db = { users: {}, messages: [] };
 if (fs.existsSync(DATA_FILE)) {
-    // ИСПРАВЛЕНИЕ: Добавлена закрывающая скобка ')'
-    db = JSON.parse(fs.readFileSync(DATA_FILE));
+    // ИСПРАВЛЕНИЕ: Проверка файла JSON должна быть внутри try-catch на случай его повреждения
+    try {
+        db = JSON.parse(fs.readFileSync(DATA_FILE));
+    } catch (e) {
+        console.error("Error reading data.json:", e);
+        // Если файл поврежден, начинаем с пустого DB
+        db = { users: {}, messages: [] };
+    }
 }
 
 function saveData() {
@@ -84,6 +96,17 @@ app.post('/upload', upload.single('file'), (req, res) => {
 app.get('/messages', (req, res) => {
     res.json(db.messages);
 });
+
+
+// 2. ИСПРАВЛЕНИЕ: Настройка Socket.IO с CORS
+const io = new Server(server, {
+    cors: {
+        origin: "*", // Разрешить подключение с любого Origin
+        methods: ["GET", "POST"]
+    }
+});
+// ----------------------------------------
+
 
 // --- REAL-TIME SOCKETS & WEBRTC SIGNALING ---
 const onlineUsers = new Map();
@@ -160,12 +183,15 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         const disconnectedUsername = onlineUsers.get(socket.id);
         onlineUsers.delete(socket.id);
-        usernameToSocketId.delete(disconnectedUsername);
+        if (disconnectedUsername) {
+             usernameToSocketId.delete(disconnectedUsername);
+        }
         io.emit('update_user_list', Array.from(new Set(onlineUsers.values())));
     });
 });
 
-const PORT = 4000;
+// 3. ИСПРАВЛЕНИЕ: Использование порта из переменной окружения Render
+const PORT = process.env.PORT || 4000; 
 server.listen(PORT, () => {
-    console.log(`✅ Server running on http://localhost:${PORT}/index.html`);
+    console.log(`✅ Server running on port ${PORT}`);
 });
