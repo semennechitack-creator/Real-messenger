@@ -1,0 +1,18 @@
+{
+  "name": "real-messenger",
+  "version": "1.0.0",
+  "description": "Real-time messenger with login",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "multer": "^2.0.2",
+    "socket.io": "^4.7.2"
+  }
+}

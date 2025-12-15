@@ -1,0 +1,9 @@
+{
+  "appId": "com.example.app",
+  "appName": "Real-messenger",
+  "webDir": "public",  
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  }
+}

@@ -1,0 +1,13 @@
+# Dependency directories
+node_modules
+
+# Logs and build artifacts
+npm-debug.log*
+
+# Capacitor/Android/iOS build folders
+android/
+ios/
+
+# Local data that should not be tracked by Git
+users.json 
+uploads/
