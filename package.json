@@ -1,19 +1,29 @@
 {
   "name": "real-messenger",
   "version": "1.0.0",
-  "description": "Real-time messenger with login",
+  "description": "Real-time messenger with login and WebRTC support.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "server": "node server.js",
+    "build": "mkdir www && copy index.html www\\",
+    "sync:android": "npm run build && npx cap sync android",
+    "open:android": "npx cap open android",
+    "serve": "npx serve www",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
     "@capacitor/cli": "^8.0.0",
     "@capacitor/core": "^8.0.0",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.4",
     "cors": "^2.8.5",
-    "express": "^4.18.2",
+    "express": "^4.22.1",
     "multer": "^2.0.2",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.8.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
   }
 }

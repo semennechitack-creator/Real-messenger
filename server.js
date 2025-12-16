@@ -1,197 +1,214 @@
+// ================================================================
+// SERVER.JS - STAR MESSENGER BACKEND
+// ================================================================
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const fs = require('fs');
+const sqlite3 = require('sqlite3').verbose();
+const bodyParser = require('body-parser');
+const cors = require('cors');
 const path = require('path');
-const multer = require('multer');
-// 1. ИСПРАВЛЕНИЕ: Добавлен модуль CORS
-const cors = require('cors'); 
 
+// --- КОНФИГУРАЦИЯ ---
 const app = express();
 const server = http.createServer(app);
-const DATA_FILE = 'data.json';
-const UPLOADS_DIR = 'public/uploads';
+const PORT = 3000;
 
-// --- НАСТРОЙКА CORS ДЛЯ HTTP/EXPRESS ---
-// Это разрешает запросы с вашего публичного домена Render
-app.use(cors()); 
-// ----------------------------------------
+// Разрешаем CORS для мобильного подключения
+app.use(cors());
+app.use(bodyParser.json());
 
-// --- НАСТРОЙКА ХРАНИЛИЩА ФАЙЛОВ (MULTER) ---
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const fileExtension = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension);
-    }
-});
-
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }
-});
-// ---------------------------------------------
-
-// Настройка Express
-app.use(express.static('public')); 
-app.use(express.json());
-
-// --- DATABASE (Simple JSON File) ---
-let db = { users: {}, messages: [] };
-if (fs.existsSync(DATA_FILE)) {
-    // ИСПРАВЛЕНИЕ: Проверка файла JSON должна быть внутри try-catch на случай его повреждения
-    try {
-        db = JSON.parse(fs.readFileSync(DATA_FILE));
-    } catch (e) {
-        console.error("Error reading data.json:", e);
-        // Если файл поврежден, начинаем с пустого DB
-        db = { users: {}, messages: [] };
-    }
-}
-
-function saveData() {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
-}
-
-// --- API ROUTES (Auth & Upload & Messages) ---
-app.post('/register', (req, res) => {
-    const { username, password } = req.body;
-    if (db.users[username]) return res.json({ success: false, message: 'User exists' });
-    
-    db.users[username] = { password, avatar: '👤' };
-    saveData();
-    res.json({ success: true });
-});
-
-app.post('/login', (req, res) => {
-    const { username, password } = req.body;
-    const user = db.users[username];
-    if (user && user.password === password) {
-        res.json({ success: true, username });
-    } else {
-        res.json({ success: false, message: 'Invalid credentials' });
-    }
-});
-
-app.post('/upload', upload.single('file'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-    }
-    const fileUrl = `/uploads/${req.file.filename}`;
-    res.json({ 
-        success: true, 
-        url: fileUrl, 
-        originalName: req.file.originalname, 
-        mimeType: req.file.mimetype 
-    });
-});
-
-app.get('/messages', (req, res) => {
-    res.json(db.messages);
-});
-
-
-// 2. ИСПРАВЛЕНИЕ: Настройка Socket.IO с CORS
+// --- SOCKET.IO ---
 const io = new Server(server, {
     cors: {
-        origin: "*", // Разрешить подключение с любого Origin
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
-// ----------------------------------------
 
+// --- БАЗА ДАННЫХ (SQLite) ---
+const db = new sqlite3.Database('./messenger.db', (err) => {
+    if (err) console.error('Ошибка БД:', err.message);
+    else console.log('📁 База данных SQLite подключена.');
+});
 
-// --- REAL-TIME SOCKETS & WEBRTC SIGNALING ---
-const onlineUsers = new Map();
-const usernameToSocketId = new Map();
+// Инициализация таблиц
+db.serialize(() => {
+    // Таблица пользователей
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT,
+        online INTEGER DEFAULT 0
+    )`);
 
-io.on('connection', (socket) => {
-    
-    socket.on('user_connected', (username) => {
-        if (!username) return; 
-        onlineUsers.set(socket.id, username);
-        usernameToSocketId.set(username, socket.id);
-        io.emit('update_user_list', Array.from(new Set(onlineUsers.values())));
-    });
+    // Таблица друзей (связи)
+    db.run(`CREATE TABLE IF NOT EXISTS friends (
+        user_id INTEGER,
+        friend_id INTEGER,
+        status TEXT DEFAULT 'accepted',
+        PRIMARY KEY (user_id, friend_id)
+    )`);
+});
 
-    socket.on('send_message', (data) => {
-        const { to, from, text, url, originalName, mimeType, isVoice } = data; 
-        
-        const msg = { 
-            to, 
-            from, 
-            text, 
-            url, 
-            originalName, 
-            mimeType,
-            isVoice: isVoice || false,
-            time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) 
-        };
-        
-        db.messages.push(msg);
-        saveData();
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+// Хранилище активных сокетов: { userId: socketId }
+const activeSockets = {};
 
-        socket.emit('receive_message', msg); 
+// --- API ROUTES (HTTP) ---
 
-        const recipientSocketId = usernameToSocketId.get(to);
-        if (recipientSocketId) {
-            io.to(recipientSocketId).emit('receive_message', msg);
-        }
-    });
-    
-    socket.on('call_user', (data) => {
-        const userToCallSocketId = usernameToSocketId.get(data.userToCall);
-        if (userToCallSocketId) {
-            io.to(userToCallSocketId).emit('incoming_call', { 
-                from: data.from, 
-                offer: data.offer,
-                isVideo: data.isVideo
-            });
-        }
-    });
+// 1. Регистрация
+app.post('/api/register', (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) return res.json({ success: false, error: 'Заполните все поля' });
 
-    socket.on('answer_call', (data) => {
-        const callerSocketId = usernameToSocketId.get(data.to);
-        if (callerSocketId) {
-            io.to(callerSocketId).emit('call_accepted', { 
-                answer: data.answer 
-            });
-        }
-    });
-
-    socket.on('ice_candidate', (data) => {
-        const targetSocketId = usernameToSocketId.get(data.to);
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('ice_candidate', data.candidate);
-        }
-    });
-
-    socket.on('call_ended', (data) => {
-        const targetSocketId = usernameToSocketId.get(data.to);
-        if (targetSocketId) {
-            io.to(targetSocketId).emit('call_ended');
-        }
-    });
-
-    socket.on('disconnect', () => {
-        const disconnectedUsername = onlineUsers.get(socket.id);
-        onlineUsers.delete(socket.id);
-        if (disconnectedUsername) {
-             usernameToSocketId.delete(disconnectedUsername);
-        }
-        io.emit('update_user_list', Array.from(new Set(onlineUsers.values())));
+    db.run(`INSERT INTO users (username, password) VALUES (?, ?)`, [username, password], function(err) {
+        if (err) return res.json({ success: false, error: 'Пользователь уже существует' });
+        res.json({ success: true, id: this.lastID });
     });
 });
 
-// 3. ИСПРАВЛЕНИЕ: Использование порта из переменной окружения Render
-const PORT = process.env.PORT || 4000; 
-server.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
+// 2. Вход
+app.post('/api/login', (req, res) => {
+    const { username, password } = req.body;
+    db.get(`SELECT id, username FROM users WHERE username = ? AND password = ?`, [username, password], (err, row) => {
+        if (err || !row) return res.json({ success: false, error: 'Неверный логин или пароль' });
+        res.json({ success: true, user: row });
+    });
+});
+
+// 3. Поиск пользователя
+app.post('/api/search', (req, res) => {
+    const { query, myId } = req.body;
+    db.all(`SELECT id, username FROM users WHERE username LIKE ? AND id != ?`, [`%${query}%`, myId], (err, rows) => {
+        if (err) return res.json({ success: false, users: [] });
+        res.json({ success: true, users: rows });
+    });
+});
+
+// 4. Добавить друга
+app.post('/api/add-friend', (req, res) => {
+    const { myId, friendId } = req.body;
+    // Добавляем двустороннюю связь
+    db.serialize(() => {
+        const stmt = db.prepare(`INSERT OR IGNORE INTO friends (user_id, friend_id) VALUES (?, ?)`);
+        stmt.run(myId, friendId);
+        stmt.run(friendId, myId);
+        stmt.finalize();
+        res.json({ success: true });
+    });
+});
+
+// 5. Список друзей
+app.post('/api/friends', (req, res) => {
+    const { myId } = req.body;
+    db.all(`
+        SELECT u.id, u.username, u.online 
+        FROM users u 
+        JOIN friends f ON u.id = f.friend_id 
+        WHERE f.user_id = ?`, [myId], (err, rows) => {
+            if (err) return res.json({ success: false, friends: [] });
+            
+            // Добавляем статус онлайн из активных сокетов
+            const friendsWithStatus = rows.map(f => ({
+                ...f,
+                isOnline: !!activeSockets[f.id]
+            }));
+            res.json({ success: true, friends: friendsWithStatus });
+    });
+});
+
+// --- SOCKET.IO ЛОГИКА ---
+
+io.on('connection', (socket) => {
+    console.log(`[Socket] Подключение: ${socket.id}`);
+    let currentUserId = null;
+
+    // Вход пользователя в сеть
+    socket.on('login', (userId) => {
+        currentUserId = userId;
+        activeSockets[userId] = socket.id;
+        console.log(`[Auth] User ${userId} теперь онлайн (Socket ${socket.id})`);
+        socket.broadcast.emit('user_status', { userId, status: true });
+    });
+
+    // Текстовое сообщение (ТОЛЬКО ДРУЗЬЯМ)
+    socket.on('chat_message', (data) => {
+        const { toUserId, message, fromUserName } = data;
+        const targetSocket = activeSockets[toUserId];
+
+        // Проверка дружбы перед отправкой (упрощено, но в идеале нужно делать запрос к БД)
+        if (targetSocket) {
+            io.to(targetSocket).emit('chat_message', {
+                fromUserId: currentUserId,
+                fromUserName: fromUserName,
+                message: message
+            });
+        }
+    });
+
+    // --- WEBRTC SIGNALING (Звонки) ---
+    
+    // Запрос на звонок
+    socket.on('call_request', (data) => {
+        const { toUserId, fromUserName } = data;
+        const targetSocket = activeSockets[toUserId];
+        
+        if (targetSocket) {
+            console.log(`[Call] Звонок от ${currentUserId} к ${toUserId}`);
+            io.to(targetSocket).emit('call_request', {
+                fromUserId: currentUserId,
+                fromUserName: fromUserName,
+                sdp: data.sdp // Offer
+            });
+        } else {
+            socket.emit('call_failed', { reason: 'User offline' });
+        }
+    });
+
+    // Ответ на звонок (Answer)
+    socket.on('call_answer', (data) => {
+        const { toUserId, sdp } = data;
+        const targetSocket = activeSockets[toUserId];
+        if (targetSocket) {
+            io.to(targetSocket).emit('call_answer', { sdp });
+        }
+    });
+
+    // ICE Candidates (Пути соединения)
+    socket.on('ice_candidate', (data) => {
+        const { toUserId, candidate } = data;
+        const targetSocket = activeSockets[toUserId];
+        if (targetSocket) {
+            io.to(targetSocket).emit('ice_candidate', { candidate });
+        }
+    });
+    
+    // Завершение звонка
+    socket.on('end_call', (data) => {
+        const { toUserId } = data;
+        const targetSocket = activeSockets[toUserId];
+        if (targetSocket) {
+            io.to(targetSocket).emit('end_call');
+        }
+    });
+
+    // Отключение
+    socket.on('disconnect', () => {
+        if (currentUserId) {
+            delete activeSockets[currentUserId];
+            socket.broadcast.emit('user_status', { userId: currentUserId, status: false });
+            console.log(`[Auth] User ${currentUserId} отключился`);
+        }
+    });
+});
+
+// Запуск
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`
+    🚀 STAR MESSENGER SERVER ЗАПУЩЕН
+    🔗 Адрес: http://localhost:${PORT}
+    📲 Не забудьте обновить IP в index.html!
+    `);
 });
