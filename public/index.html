@@ -146,7 +146,7 @@
             border-bottom: 1px solid var(--glass-border);
         }
 
-        .user-info { font-weight: 600; font-size: 1.2rem; }
+        .user-info { display: flex; align-items: center; font-weight: 600; font-size: 1.2rem; }
         .status-dot { width: 10px; height: 10px; background: var(--success); border-radius: 50%; display: inline-block; margin-right: 5px; box-shadow: 0 0 10px var(--success); }
 
         .search-bar {
@@ -158,6 +158,15 @@
         .list-container {
             flex-grow: 1;
             overflow-y: auto;
+        }
+        
+        /* --- Аватары и Друзья --- */
+        .avatar-small {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--secondary);
+            margin-right: 10px;
         }
 
         .friend-item {
@@ -172,6 +181,7 @@
             transition: 0.3s;
             cursor: pointer;
         }
+        .friend-info { flex-grow: 1; display: flex; align-items: center; }
 
         .friend-item:hover { background: rgba(255,255,255,0.15); border-color: var(--primary); }
         .friend-name { font-weight: 600; }
@@ -216,110 +226,77 @@
             padding-bottom: env(safe-area-inset-bottom, 10px);
         }
 
-        /* --- VIDEO CALL OVERLAY --- */
-        #video-screen {
-            background: black;
-            z-index: 100;
-        }
-        
-        .video-grid {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
+        /* --- VIDEO CALL OVERLAY (Остается прежним) --- */
+        #video-screen { background: black; z-index: 100; }
+        .video-grid { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; }
+        video { width: 100%; height: 100%; object-fit: cover; }
         #remoteVideo { flex: 1; }
         #localVideo {
-            position: absolute;
-            bottom: 100px; right: 20px;
-            width: 120px; height: 160px;
-            border-radius: 10px;
-            border: 2px solid var(--primary);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            position: absolute; bottom: 100px; right: 20px;
+            width: 120px; height: 160px; border-radius: 10px;
+            border: 2px solid var(--primary); box-shadow: 0 5px 20px rgba(0,0,0,0.5);
             z-index: 10;
         }
-
-        .call-controls {
-            position: absolute;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            z-index: 20;
-        }
-
-        .call-btn {
-            width: 60px; height: 60px;
-            border-radius: 50%;
-            border: none;
-            font-size: 24px;
-            display: flex; justify-content: center; align-items: center;
-            color: white;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
+        .call-controls { bottom: 30px; width: 100%; display: flex; justify-content: center; gap: 20px; z-index: 20; position: absolute; }
+        .call-btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 24px; display: flex; justify-content: center; align-items: center; color: white; box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: pointer; transition: transform 0.2s; }
         .call-btn:active { transform: scale(0.95); }
-
         .btn-end { background: var(--danger); }
         .btn-accept { background: var(--success); }
         .btn-cam { background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); }
 
-        /* --- ИНТЕРФЕЙС ВХОДЯЩЕГО ЗВОНКА --- */
-        #incoming-call-screen {
-            background: linear-gradient(to top, #1c2841, #0f0c29);
-            z-index: 150;
-            justify-content: center;
-            align-items: center;
+        /* --- ИНТЕРФЕЙС ВХОДЯЩЕГО ЗВОНКА (Остается прежним) --- */
+        #incoming-call-screen { background: linear-gradient(to top, #1c2841, #0f0c29); z-index: 150; justify-content: center; align-items: center; text-align: center; padding: 0; }
+        .incoming-content { display: flex; flex-direction: column; justify-content: space-around; height: 80%; }
+        .caller-avatar { width: 150px; height: 150px; background: var(--glass); border-radius: 50%; border: 5px solid var(--primary); margin: 0 auto 30px; display: flex; justify-content: center; align-items: center; font-size: 60px; animation: pulse 2s infinite; }
+        .call-text h2 { font-size: 2.5rem; margin: 0; font-weight: 800; }
+        .call-text p { font-size: 1.2rem; color: var(--primary); margin-top: 10px; }
+        .incoming-actions { display: flex; justify-content: center; gap: 50px; padding-bottom: 50px; }
+
+        /* --- ЭКРАН СМЕНЫ АВАТАРА --- */
+        #avatar-screen .avatar-preview {
+             width: 150px; height: 150px;
+             border-radius: 50%;
+             object-fit: cover;
+             border: 3px solid var(--primary);
+             margin: 20px auto 30px;
+             display: block;
+        }
+        
+        /* --- КРАСИВОЕ МОДАЛЬНОЕ ОКНО (Custom Modal) --- */
+        #custom-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            width: 300px;
+            background: #24243e;
+            border: 1px solid var(--primary);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            padding: 25px;
             text-align: center;
-            padding: 0;
-        }
-        
-        .incoming-content {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-around;
-            height: 80%;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            z-index: 500;
         }
 
-        .caller-avatar {
-            width: 150px; height: 150px;
-            background: var(--glass);
-            border-radius: 50%;
-            border: 5px solid var(--primary);
-            margin: 0 auto 30px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 60px;
-            animation: pulse 2s infinite;
+        #custom-modal.visible {
+            opacity: 1;
+            visibility: visible;
+            transform: translate(-50%, -50%) scale(1);
         }
 
-        .call-text h2 {
-            font-size: 2.5rem;
-            margin: 0;
-            font-weight: 800;
-        }
-        .call-text p {
-            font-size: 1.2rem;
-            color: var(--primary);
-            margin-top: 10px;
+        .modal-message {
+            margin: 15px 0;
+            font-size: 1.1rem;
         }
         
-        .incoming-actions {
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-            padding-bottom: 50px;
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 499;
+            display: none;
         }
 
 
@@ -349,8 +326,9 @@
 
         <div id="main-screen" class="screen hidden">
             <div class="header">
-                <div class="user-info">
-                    <span class="status-dot"></span> <span id="my-username-display">User</span>
+                <div class="user-info" onclick="showScreen('avatar-screen')" style="cursor: pointer;">
+                    <img id="my-avatar-display-small" class="avatar-small" src="https://via.placeholder.com/40?text=A">
+                    <span id="my-username-display">User</span>
                 </div>
                 <button class="btn btn-secondary" style="width: auto; padding: 5px 15px;" onclick="logout()">Выход</button>
             </div>
@@ -358,6 +336,11 @@
             <div class="search-bar">
                 <input type="text" id="search-input" placeholder="Найти друзей..." style="margin: 0;">
                 <button class="btn btn-primary" style="width: 50px; margin: 0;" onclick="searchUsers()"><i class="fas fa-search"></i></button>
+            </div>
+            
+            <div id="incoming-requests-container" style="margin-bottom: 20px; display: none;">
+                <h3>📥 Новые запросы (<span id="req-count">0</span>)</h3>
+                <div id="incoming-requests-list"></div>
             </div>
 
             <h3>Мои Друзья</h3>
@@ -419,13 +402,32 @@
                 </div>
             </div>
         </div>
+        
+        <div id="avatar-screen" class="screen hidden">
+            <div class="header">
+                <button class="btn btn-secondary" style="width: 40px; margin:0; padding:0;" onclick="goBackToMain()"><i class="fas fa-arrow-left"></i></button>
+                <h2 style="margin: 0;">Смена Аватара</h2>
+                <div></div>
+            </div>
+            <img id="avatar-preview" class="avatar-preview" src="https://via.placeholder.com/150?text=A">
+            <input type="url" id="avatar-url-input" oninput="updateAvatarPreview()" placeholder="Введите URL изображения (https://...)">
+            <button class="btn btn-primary" onclick="setAvatar()">Сохранить Аватар</button>
+        </div>
 
     </div>
+    
+    <div id="custom-modal">
+        <h3 id="modal-title" style="color: var(--primary);">Успех!</h3>
+        <p class="modal-message" id="modal-text">Сообщение об успехе.</p>
+        <button class="btn btn-primary" style="width: 100px;" onclick="closeCustomModal()">ОК</button>
+    </div>
+    <div class="modal-backdrop" onclick="closeCustomModal()"></div>
+
 
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
         // --- КОНФИГУРАЦИЯ ---
-        // ⚠️ ЗАМЕНИТЕ НА ВАШ ЛОКАЛЬНЫЙ IP или URL ХОСТИНГА (Render)
+        // ⚠️ ЗАМЕНИТЕ НА ВАШ АКТУАЛЬНЫЙ URL Render.
         const API_URL = 'https://real-messenger.onrender.com'; 
         
         let socket;
@@ -442,7 +444,7 @@
         const { Capacitor } = window;
         const Permissions = window.Capacitor ? (Capacitor.Plugins.Permissions || {}) : {};
 
-        // --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ ---
+        // --- УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ И МОДАЛЬНЫМИ ОКНАМИ ---
         
         function showScreen(screenId) {
             document.querySelectorAll('.screen').forEach(el => {
@@ -453,6 +455,32 @@
             target.classList.remove('hidden');
             target.classList.add('active');
         }
+        
+        function goBackToMain() {
+            currentChatFriend = null;
+            showScreen('main-screen');
+            loadFriends(); // Обновляем список после возможной смены аватара
+        }
+
+        function showCustomModal(title, text) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-text').textContent = text;
+            document.getElementById('custom-modal').classList.add('visible');
+            document.querySelector('.modal-backdrop').style.display = 'block';
+        }
+
+        function closeCustomModal() {
+            document.getElementById('custom-modal').classList.remove('visible');
+            document.querySelector('.modal-backdrop').style.display = 'none';
+        }
+        
+        function updateUserInfo(user) {
+            currentUser = user;
+            document.getElementById('my-username-display').textContent = user.username;
+            // Устанавливаем дефолтное изображение, если URL пустой
+            const avatarUrl = user.avatar && user.avatar.startsWith('http') ? user.avatar : 'https://via.placeholder.com/40?text=A'; 
+            document.getElementById('my-avatar-display-small').src = avatarUrl;
+        }
 
         // --- AUTH LOGIC ---
 
@@ -460,7 +488,7 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
-            if(!username || !password) return alert('Введите данные');
+            if(!username || !password) return showCustomModal('Внимание', 'Введите имя пользователя и пароль.');
 
             try {
                 const res = await fetch(`${API_URL}/api/${type}`, {
@@ -472,19 +500,18 @@
 
                 if (data.success) {
                     if (type === 'register') {
-                        alert('Регистрация успешна! Теперь войдите.');
+                        showCustomModal('Регистрация', 'Регистрация успешна! Теперь войдите.');
                     } else {
-                        currentUser = data.user;
-                        document.getElementById('my-username-display').textContent = currentUser.username;
+                        updateUserInfo(data.user);
                         connectSocket();
                         loadFriends();
                         showScreen('main-screen');
                     }
                 } else {
-                    alert(data.error);
+                    showCustomModal('Ошибка', data.error);
                 }
             } catch (e) {
-                alert('Ошибка соединения с сервером');
+                showCustomModal('Ошибка', 'Ошибка соединения с сервером. Проверьте URL.');
                 console.error(e);
             }
         }
@@ -504,18 +531,28 @@
                 socket.emit('login', currentUser.id);
             });
 
+            // ОБРАБОТКА НОВЫХ СОБЫТИЙ СИСТЕМЫ ДРУЗЕЙ
+            socket.on('friend_request_received', () => {
+                 showCustomModal('Новый запрос!', 'Вам пришел новый запрос на дружбу. Проверьте список.');
+                 loadFriends(); 
+            });
+            
+            socket.on('friend_accepted', () => {
+                 showCustomModal('Дружба установлена!', 'Ваш запрос был принят!');
+                 loadFriends();
+            });
+            
             socket.on('chat_message', (data) => {
                 if (currentChatFriend && currentChatFriend.id === data.fromUserId) {
                     appendMessage(data.message, 'in');
                 } else {
-                    alert(`Сообщение от ${data.fromUserName}: ${data.message}`);
+                    showCustomModal(`Сообщение от ${data.fromUserName}`, data.message);
                 }
             });
 
             // WEB RTC SOCKET EVENTS
             socket.on('call_request', async (data) => {
                 incomingCallData = data;
-                // Активируем новый, красивый экран входящего звонка!
                 document.getElementById('caller-name-display').textContent = data.fromUserName;
                 showScreen('incoming-call-screen'); 
             });
@@ -539,21 +576,48 @@
             });
         }
 
-        // --- FRIEND SYSTEM (логика осталась прежней) ---
+        // --- FRIEND SYSTEM (СИСТЕМА ЗАПРОСОВ) ---
 
         async function loadFriends() {
-             const res = await fetch(`${API_URL}/api/friends`, {
+            const res = await fetch(`${API_URL}/api/friends`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ myId: currentUser.id })
             });
             const data = await res.json();
             
-            const list = document.getElementById('friends-list');
-            list.innerHTML = '';
+            const friendsList = document.getElementById('friends-list');
+            const reqContainer = document.getElementById('incoming-requests-container');
+            const reqList = document.getElementById('incoming-requests-list');
+            const reqCount = document.getElementById('req-count');
+            
+            friendsList.innerHTML = '';
+            reqList.innerHTML = '';
 
-            if (data.friends.length === 0) {
-                list.innerHTML = '<div style="text-align:center; opacity:0.5;">У вас пока нет друзей :(</div>';
+            // 1. Отображение входящих запросов
+            if (data.incomingRequests && data.incomingRequests.length > 0) {
+                reqContainer.style.display = 'block';
+                reqCount.textContent = data.incomingRequests.length;
+                data.incomingRequests.forEach(req => {
+                    const item = document.createElement('div');
+                    item.className = 'friend-item';
+                    item.innerHTML = `
+                        <div class="friend-info">
+                            <img class="avatar-small" src="${req.avatar || 'https://via.placeholder.com/40?text=A'}">
+                            <span>${req.username} (Запрос)</span>
+                        </div>
+                        <button class="btn btn-primary" style="width:auto; padding:5px 10px;" onclick="acceptFriend(${req.id})">Принять</button>
+                    `;
+                    reqList.appendChild(item);
+                });
+            } else {
+                 reqContainer.style.display = 'none';
+            }
+
+
+            // 2. Отображение списка друзей (Accepted)
+            if (data.friends.length === 0 && (data.incomingRequests ? data.incomingRequests.length === 0 : true)) {
+                friendsList.innerHTML = '<div style="text-align:center; opacity:0.5;">У вас пока нет друзей :(</div>';
                 return;
             }
 
@@ -562,13 +626,16 @@
                 item.className = 'friend-item';
                 item.onclick = () => openChat(friend);
                 item.innerHTML = `
-                    <div>
-                        <div class="friend-name">${friend.username}</div>
-                        <div class="friend-status">${friend.isOnline ? '<span class="online-tag">В сети</span>' : 'Не в сети'}</div>
+                    <div class="friend-info">
+                        <img class="avatar-small" src="${friend.avatar || 'https://via.placeholder.com/40?text=A'}">
+                        <div>
+                            <div class="friend-name">${friend.username}</div>
+                            <div class="friend-status">${friend.isOnline ? '<span class="online-tag">В сети</span>' : 'Не в сети'}</div>
+                        </div>
                     </div>
                     <i class="fas fa-comment-dots" style="color: var(--primary);"></i>
                 `;
-                list.appendChild(item);
+                friendsList.appendChild(item);
             });
         }
 
@@ -587,12 +654,21 @@
             const resultsList = document.getElementById('search-list');
             resultsDiv.style.display = 'block';
             resultsList.innerHTML = '';
+            
+            if (data.users.length === 0) {
+                resultsList.innerHTML = '<div style="text-align:center; opacity:0.5;">Пользователи не найдены.</div>';
+                return;
+            }
 
             data.users.forEach(user => {
                 const div = document.createElement('div');
                 div.className = 'friend-item';
+                // Пока аватар в поиске не используется, но его можно добавить
                 div.innerHTML = `
-                    <span>${user.username}</span>
+                    <div class="friend-info">
+                        <img class="avatar-small" src="${user.avatar || 'https://via.placeholder.com/40?text=A'}">
+                        <span>${user.username}</span>
+                    </div>
                     <button class="btn btn-primary" style="width:auto; padding:5px 10px;" onclick="addFriend(${user.id})">Добавить</button>
                 `;
                 resultsList.appendChild(div);
@@ -600,29 +676,71 @@
         }
 
         async function addFriend(friendId) {
-            await fetch(`${API_URL}/api/add-friend`, {
+            const res = await fetch(`${API_URL}/api/request-friend`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ myId: currentUser.id, friendId })
             });
-            alert('Друг добавлен!');
+            const data = await res.json();
+            
+            showCustomModal('Запрос отправлен', data.message || 'Запрос на дружбу отправлен!');
             document.getElementById('search-input').value = '';
             document.getElementById('search-results').style.display = 'none';
             loadFriends();
         }
+        
+        async function acceptFriend(requesterId) {
+            const res = await fetch(`${API_URL}/api/accept-friend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ myId: currentUser.id, requesterId })
+            });
+            const data = await res.json();
+            
+            showCustomModal('Успех', data.message);
+            loadFriends();
+        }
+        
+        // --- АВАТАР ЛОГИКА ---
+        
+        function updateAvatarPreview() {
+            const url = document.getElementById('avatar-url-input').value;
+            // Простая проверка для предпросмотра
+            document.getElementById('avatar-preview').src = url && url.startsWith('http') ? url : 'https://via.placeholder.com/150?text=A';
+        }
+
+        async function setAvatar() {
+            const avatarUrl = document.getElementById('avatar-url-input').value;
+            if (!avatarUrl || !avatarUrl.startsWith('http')) {
+                return showCustomModal('Ошибка', 'Пожалуйста, введите полный и корректный URL-адрес (начинается с http).');
+            }
+            
+            const res = await fetch(`${API_URL}/api/set-avatar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, avatarUrl })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                currentUser.avatar = avatarUrl;
+                updateUserInfo(currentUser);
+                showCustomModal('Успех', 'Аватар обновлен!');
+                showScreen('main-screen');
+            } else {
+                showCustomModal('Ошибка', data.message);
+            }
+        }
+
 
         // --- CHAT LOGIC ---
 
         function openChat(friend) {
             currentChatFriend = friend;
             document.getElementById('chat-friend-name').textContent = friend.username;
+            // Можно добавить отображение аватара друга в хедере чата
             document.getElementById('chat-messages').innerHTML = ''; 
             showScreen('chat-screen');
-        }
-
-        function goBackToMain() {
-            currentChatFriend = null;
-            showScreen('main-screen');
         }
 
         function sendMessage() {
@@ -664,7 +782,7 @@
                 localStream = stream;
                 return stream;
             } catch (e) {
-                alert('Нет доступа к камере! Проверьте разрешения.');
+                showCustomModal('Ошибка Камеры', 'Нет доступа к камере или микрофону. Проверьте разрешения.');
                 return null;
             }
         }
@@ -682,20 +800,30 @@
 
             socket.emit('call_request', {
                 toUserId: currentChatFriend.id,
+                fromUserId: currentUser.id,
                 fromUserName: currentUser.username,
                 sdp: offer
             });
         }
 
         async function acceptCall() {
-            // Возвращаемся в стандартный режим видеозвонка
             showScreen('video-screen');
             
             const stream = await requestMedia();
-            if(!stream) return;
+            if(!stream) {
+                 // Отклоняем, если нет медиа
+                 showScreen('main-screen');
+                 socket.emit('call_rejected', { toUserId: incomingCallData.fromUserId });
+                 return;
+            }
             
             createPeerConnection();
 
+            currentChatFriend = { 
+                id: incomingCallData.fromUserId, 
+                username: incomingCallData.fromUserName 
+            }; 
+            
             await peerConnection.setRemoteDescription(new RTCSessionDescription(incomingCallData.sdp));
             const answer = await peerConnection.createAnswer();
             await peerConnection.setLocalDescription(answer);
@@ -704,18 +832,22 @@
                 toUserId: incomingCallData.fromUserId,
                 sdp: answer
             });
+            incomingCallData = null; // Сбрасываем входящий звонок
         }
 
         function rejectCall() {
-            // Выход из экрана входящего звонка и возврат в главное меню
+            // Отправляем сигнал "отклонено" обратно, если звонок еще активен
+            if(incomingCallData) {
+                 socket.emit('call_rejected', { toUserId: incomingCallData.fromUserId });
+            }
+            incomingCallData = null;
             showScreen('main-screen');
-            // Опционально: отправить сигнал "отклонено" обратно
-            // socket.emit('call_rejected', { toUserId: incomingCallData.fromUserId });
         }
 
         function createPeerConnection() {
             peerConnection = new RTCPeerConnection(rtcConfig);
 
+            // Добавляем локальный поток в PeerConnection
             localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
             peerConnection.ontrack = (event) => {
@@ -740,11 +872,17 @@
         }
 
         function closeVideoCall() {
-            if (peerConnection) peerConnection.close();
+            if (peerConnection) {
+                 peerConnection.ontrack = null;
+                 peerConnection.onicecandidate = null;
+                 peerConnection.close();
+                 peerConnection = null;
+            }
             if (localStream) localStream.getTracks().forEach(t => t.stop());
             
             document.getElementById('remoteVideo').srcObject = null;
             document.getElementById('localVideo').srcObject = null;
+            localStream = null;
             
             // Возвращаемся в чат если были в нем, или в меню
             if(currentChatFriend) showScreen('chat-screen');
@@ -752,8 +890,13 @@
         }
 
         function switchCamera() {
-            alert('Функция переключения камеры требует более сложной реализации потока.');
+            showCustomModal('Переключение камеры', 'Функция переключения камеры требует более сложной реализации логики потоков (constraints.facingMode) и пока отключена.');
         }
+
+        // --- ИНИЦИАЛИЗАЦИЯ ---
+        document.addEventListener('DOMContentLoaded', () => {
+             // По умолчанию показываем экран авторизации, если нет сессии.
+        });
 
     </script>
 </body>
